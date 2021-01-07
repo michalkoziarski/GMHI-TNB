@@ -2,10 +2,12 @@ import argparse
 import logging
 import numpy as np
 import pandas as pd
+import pickle
 
+from mlxtend.classifier import EnsembleVoteClassifier
 from models import TabNetBaggingClassifier
 from pathlib import Path
-from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, VotingClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import balanced_accuracy_score
 from xgboost import XGBClassifier
 
@@ -29,6 +31,7 @@ if __name__ == '__main__':
 
     fold_path = DATA_PATH / f'{args.fold}'
 
+    MODELS_PATH.mkdir(exist_ok=True, parents=True)
     RESULTS_PATH.mkdir(exist_ok=True, parents=True)
     PROBABILITIES_PATH.mkdir(exist_ok=True, parents=True)
 
@@ -56,25 +59,21 @@ if __name__ == '__main__':
         logging.info(f'{classifier_name} BAC = {score:.4f}')
 
         probabilities = clf.predict_proba(X_test)
-        np.save(PROBABILITIES_PATH / f'{classifier_name}_{args.fold}.npy', probabilities)
+        np.save(PROBABILITIES_PATH / f'{classifier_name}.cv.{args.fold}.npy', probabilities)
 
         results.append([classifier_name, score])
 
-    ensembles = {
-        'VCS': VotingClassifier(list(classifiers.items()), voting='soft'),
-        'VCH': VotingClassifier(list(classifiers.items()), voting='hard')
-    }
+    ensemble = EnsembleVoteClassifier(list(classifiers.values()), voting='soft', fit_base_estimators=False)
+    ensemble.fit(X_train, y_train)
 
-    for classifier_name, clf in ensembles.items():
-        logging.info(f'Training {classifier_name}...')
+    score = balanced_accuracy_score(y_test, ensemble.predict(X_test))
 
-        clf.fit(X_train, y_train)
+    logging.info(f'Ensemble BAC = {score:.4f}')
 
-        score = balanced_accuracy_score(y_test, clf.predict(X_test))
+    results.append(['Ensemble', score])
 
-        logging.info(f'{classifier_name} BAC = {score:.4f}')
-
-        results.append([classifier_name, score])
+    with open(MODELS_PATH / f'ensemble.cv.{args.fold}.pickle', 'wb') as f:
+        pickle.dump(ensemble, f)
 
     df = pd.DataFrame(results, columns=['Classifier', 'BAC'])
     df.to_csv(RESULTS_PATH / f'{args.fold}.csv', index=False)
