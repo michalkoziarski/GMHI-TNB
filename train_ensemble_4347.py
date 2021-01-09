@@ -30,7 +30,7 @@ if __name__ == '__main__':
     PROBABILITIES_PATH.mkdir(exist_ok=True, parents=True)
 
     X_train, y_train = load_4347(binarize=True)
-    X_test, y_test = load_val()
+    X_test, y_test = load_val(exclude_weight=True)
 
     classifiers = {
         'TNB': Pipeline([

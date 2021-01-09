@@ -66,7 +66,7 @@ def load_4347(species=None, class_dict=None, binarize=False):
     return X, y
 
 
-def load_val(species=None):
+def load_val(species=None, exclude_weight=False):
     if species is None:
         species = get_species()
 
@@ -85,6 +85,12 @@ def load_val(species=None):
 
         assert len(mds) == 1
 
+        if exclude_weight:
+            full_phenotype = mds.iloc[0]['Phenotype_all']
+
+            if full_phenotype[-3:] in [':OB', ':OW', ':UW']:
+                continue
+
         label = mds.iloc[0]['Phenotype']
 
         if label == 'Healthy':
@@ -99,4 +105,4 @@ def load_val(species=None):
 
         i += 1
 
-    return X, y
+    return X[:i], y[:i]
