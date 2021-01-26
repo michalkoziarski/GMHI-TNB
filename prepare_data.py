@@ -1,6 +1,6 @@
 import numpy as np
 
-from data_utils import load_4347, load_val
+from data_utils import load_4347, load_dm, load_val
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold
@@ -14,9 +14,10 @@ DATA_PATH.mkdir(exist_ok=True, parents=True)
 
 X1, y1 = load_4347(binarize=True)
 X2, y2 = load_val()
+X3, y3 = load_dm()
 
-X = np.concatenate([X1, X2])
-y = np.concatenate([y1, y2])
+X = np.concatenate([X1, X2, X3])
+y = np.concatenate([y1, y2, y3])
 
 skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=SEED)
 
