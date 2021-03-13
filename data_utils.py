@@ -10,13 +10,11 @@ INPUT_PATH = Path(__file__).parent / 'input'
 def get_species(exclude_unclassified_and_viruses=True):
     df_4347 = pd.read_csv(INPUT_PATH / '4347_final_relative_abundances.txt', sep='\t')
     df_val = pd.read_csv(INPUT_PATH / 'validation_abundance.csv')
-    df_dm = pd.read_csv(INPUT_PATH / 'dm_abundance.csv')
 
     s_4347 = list(df_4347.transpose().iloc[0])
     s_val = list(df_val.transpose().iloc[0])
-    s_dm = list(df_dm.columns)
 
-    species = sorted(list(set(s_4347 + s_val + s_dm)))
+    species = sorted(list(set(s_4347 + s_val)))
 
     if exclude_unclassified_and_viruses:
         species = [s for s in species if 'unclassified' not in s]
@@ -102,45 +100,6 @@ def load_val(species=None, exclude_weight=False):
             y[i] = 1
         else:
             raise ValueError
-
-        for j, s_j in enumerate(species):
-            X[i, j] = row.get(s_j, 0.0)
-
-        i += 1
-
-    X = X / X.sum(axis=1, keepdims=True) * 100
-
-    return X[:i], y[:i]
-
-
-def load_dm(species=None, exclude_weight=False):
-    if species is None:
-        species = get_species()
-
-    df = pd.read_csv(INPUT_PATH / 'dm_abundance.csv')
-    df = df.set_index('Unnamed: 0')
-
-    md = pd.read_csv(INPUT_PATH / 'dm_metadata.csv')
-
-    X = np.empty((len(df), len(species)), dtype=np.float32)
-    y = np.empty(len(df), dtype=np.uint64)
-
-    i = 0
-
-    for index, row in df.iterrows():
-        mds = md[md['sample-id'] == index]
-
-        assert len(mds) == 1
-
-        label = mds.iloc[0]['disease']
-
-        if exclude_weight and label == 'obesity':
-            continue
-
-        if label == 'Healthy':
-            y[i] = 0
-        else:
-            y[i] = 1
 
         for j, s_j in enumerate(species):
             X[i, j] = row.get(s_j, 0.0)
